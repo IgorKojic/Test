@@ -1,0 +1,112 @@
+﻿<div>
+    @ViewBag.ErrorMassege
+</div>
+@(Html.Kendo().Grid<TestApp.Models.Category>()
+                  .Name("grid")
+                  .Columns(columns =>
+                  {
+                      columns.Bound(c => c.Name);
+                      columns.Bound(c => c.ValidFrom).Format("{0:dd/MM/yyyy}");
+                      columns.Command(command => { command.Edit(); command.Destroy(); }).Width(250);
+                  })
+                  .Scrollable().ClientDetailTemplateId("template")
+                  .Sortable()
+                  .Pageable()
+                  .ToolBar(toolbar =>
+                  {
+                      toolbar.Create().Text("Add new category");
+                  }
+                      )
+                  .HtmlAttributes(new { style = "height:550px;" })
+                  .Editable(editable => editable.Mode(GridEditMode.InLine))
+                  .DataSource(dataSource => dataSource
+                      .Ajax().Events(events => events.Error("on_Error"))
+                      .Read(read => read.Action("Categories_Read", "Index"))
+                      .Model(model => model.Id(p => p.CategoryID))
+                      .Create(create => create.Action("Category_Create", "Index"))
+                      .Update(update => update.Action("Category_Update", "Index"))
+                      .Destroy(destroy => destroy.Action("Category_Destroy", "Index"))
+                  ).Events(events => events.DataBound("dataBound"))
+
+)
+
+<script id="template" type="text/kendo-tmpl">
+    @(Html.Kendo().TabStrip()
+                                            .Name("tabStrip_#=CategoryID#")
+                                            .SelectedIndex(0)
+                                            .Animation(animation => animation.Open(open => open.Fade(FadeDirection.In)))
+                                            .Items(items =>
+                                            {
+                                                items.Add().Text("Products").Content(@<text>
+                                                    @(Html.Kendo().Grid<TestApp.Models.Product>()
+                                                                                        .Name("grid_#=CategoryID#") // template expression, to be evaluated in the master context
+                                                                                        .Columns(columns =>
+                                                                                        {
+                                                                                            columns.Bound(o => o.Name).Width(100);
+                                                                                            columns.Bound(o => o.ValidFrom).Width(150).Format("{0:dd/MM/yyyy}");
+                                                                                            columns.Bound(o => o.Quantity).Width(150);
+                                                                                            columns.Bound(o => o.Price).Width(190);
+                                                                                            columns.Command(command => { command.Edit(); command.Destroy(); }).Width(250);
+                                                                                        })
+                                                                                        .ToolBar(toolbar =>
+                                                                                        {
+                                                                                            toolbar.Create().Text("Add new product");
+                                                                                        }
+                                                                                                              )
+                                                                                        .DataSource(dataSource => dataSource
+                                                                                            .Ajax().Events(events => events.Error("on_Error"))
+                                                                                            .PageSize(5)
+                                                                                            .Read(read => read.Action("DetailTemplate_Products_By_Category", "Index", new { categoryID = "#=CategoryID#" }))
+                                                                                            .Model(model => model.Id(p => p.ProductID))
+                                                                                                    .Create(update => update.Action("Product_Create", "Index", new { categoryID = "#=CategoryID#" }))
+                                                                                                    .Update(update => update.Action("Product_Update", "Index", new { categoryID = "#=CategoryID#" }))
+                                                                                                    .Destroy(update => update.Action("Product_Destroy", "Index"))
+                                                                                        )
+                                                                                        .Pageable()
+                                                                                        .Sortable()
+                                                                                        .Editable(editable => editable.Mode(GridEditMode.InLine))
+                                                                                        .ToClientTemplate())
+                                                </text>
+                                                                                );
+                                                    })
+                                                                            .ToClientTemplate())
+</script>
+
+<script>
+    function dataBound() {
+        this.expandRow(this.tbody.find("tr.k-master-row").first());
+    }
+</script>
+<script>
+    function on_Error(e, status) {
+        alert(e.errors);
+        this.cancelChanges();
+    }
+</script>
+
+<style>
+    .k-detail-cell .k-tabstrip .k-content {
+        padding: 0.2em;
+    }
+
+    .employee-details ul {
+        list-style: none;
+        font-style: italic;
+        margin: 15px;
+        padding: 0;
+    }
+
+        .employee-details ul li {
+            margin: 0;
+            line-height: 1.7em;
+        }
+
+    .employee-details label {
+        display: inline-block;
+        width: 90px;
+        padding-right: 10px;
+        text-align: right;
+        font-style: normal;
+        font-weight: bold;
+    }
+</style>
